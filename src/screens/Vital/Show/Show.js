@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {View, Text, RefreshControl} from 'react-native';
 import SafeAreaView from 'react-native-safe-area-view';
 import ActionButton from 'react-native-action-button';
-import { AreaChart, Grid, LineChart, YAxis } from 'react-native-svg-charts'
+import { Grid, LineChart, YAxis } from 'react-native-svg-charts'
 
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import moment from 'moment';
@@ -21,11 +21,21 @@ export default Add = ({navigation}) => {
     const [temperateData, setTemperatureData] = useState([98, 98.3, 97.8, 98.5, 97, 97.9, 97.6, 98.3]);
     const [bloodData, setBloodData] = useState([60, 90, 100, 120, 80, 60, 40, 100, 120, 90, 100]);
     const [oximeterData, setOximeterData] = useState([78, 78, 78.5, 77.5, 79, 77, 78.3, 77.5, 78.1, 78, 78, 78, 78, 78.5, 77.5, 79, 77, 78.3, 77.5, 78.1, 78, 78, 78, 78, 78.5, 77.5, 79, 77, 78.3, 77.5, 78.1, 78, 78]);
+    const [oxygenSpo2, setOxygenSpo2] = useState(0);
 
     useEffect(() => {
+        setDateString(moment().format("MMMM D, YYYY").toUpperCase());
+        let d = [];
+
+        for(let i=-3; i < 4; i++){
+            let date = moment().add(i, 'days');
+            d.push( { date: date.format("DD"), day: date.format("ddd"), fullDate: date.format("YYYY-MM-DD")});
+        }
+
+        setDates(d);
+
         const unsubscribe = navigation.addListener('focus', () => {
             _refresh();
-            fetchData();
         });
         
         return unsubscribe;
@@ -36,28 +46,21 @@ export default Add = ({navigation}) => {
     }, []);
 
     const _refresh = async () => {
-        setDateString(moment().format("MMMM D, YYYY").toUpperCase());
-        let d = [];
-
-        for(let i=-3; i < 4; i++){
-            let date = moment().add(i, 'days');
-            d.push( { date: date.format("DD"), day: date.format("ddd"), fullDate: date.format("YYYY-MM-DD")});
-        }
-
-        setDates(d);
-        setRefreshFlag(0);
+        fetchData();
     }
 
     useEffect( () => {
         fetchData();
     }, [currentDate]);
 
-    const fetchData = async() => {
+    const fetchData = async () => {
+        setRefreshFlag(1);
         const res = await homeAPI(currentDate);
-        console.log(res.data);
         setTemperatureData(res.data.temperature);
         setBloodData(res.data.blood);
         setOximeterData(res.data.oxygenPr);
+        setOxygenSpo2(res.data.oxygenSpo2);
+        setRefreshFlag(0);
     }
 
     return (
@@ -108,7 +111,7 @@ export default Add = ({navigation}) => {
                                         <FontAwesomeIcon name="thermometer-half" color="white" size={30}/>
                                         <Text style={{color: "white", marginLeft: 8, fontWeight: 'bold'}}>Temperature</Text>
                                     </View>
-                                    <View style={{ height: 75, flexDirection: 'row', paddingHorizontal: 8}}>
+                                    <View style={{ flex:1, minHeight: 75, flexDirection: 'row', paddingHorizontal: 8}}>
                                         {
                                             temperateData.length == 0 ?
                                             (
@@ -160,7 +163,7 @@ export default Add = ({navigation}) => {
                                         <FontAwesomeIcon name="heartbeat" color="white" size={30}/>
                                         <Text style={{color: "white", marginLeft: 8, fontWeight: 'bold'}}>Oximeter</Text>
                                     </View>
-                                    <View style={{ height: 100, flexDirection: 'row' }}>
+                                    <View style={{flex: 1, minHeight: 100, flexDirection: 'row' }}>
                                         {
                                             oximeterData.length == 0 ?
                                             (
@@ -200,7 +203,7 @@ export default Add = ({navigation}) => {
                                         <View style={{flex: 1, justifyContent: "center", alignItems: "flex-start"}}>
                                             <Text style={{color: "white", marginLeft: 8, fontWeight: 'bold', fontSize: 14}}>SpO2</Text>
                                             <View style={{flexDirection: "row", marginTop: -8}}>
-                                                <Text style={{color: "white", fontWeight: 'bold', marginLeft: 8, fontSize: 36}}>96</Text>
+                                                <Text style={{color: "white", fontWeight: 'bold', marginLeft: 8, fontSize: 36}}>{oxygenSpo2}</Text>
                                                 <View style={{justifyContent: "flex-end", alignItems: "flex-end", marginBottom: 8}}>
                                                     <Text style={{color: "white", fontSize: 10}}>%</Text>
                                                 </View>
@@ -209,7 +212,7 @@ export default Add = ({navigation}) => {
                                         <View style={{flex: 1, justifyContent: "center", alignItems: "flex-start"}}>
                                             <Text style={{color: "white", marginLeft: 8, fontWeight: 'bold', fontSize: 14}}>PR</Text>
                                             <View style={{flexDirection: "row", marginTop: -8}}>
-                                                <Text style={{color: "white", fontWeight: 'bold', marginLeft: 8, fontSize: 36}}>78</Text>
+                                                <Text style={{color: "white", fontWeight: 'bold', marginLeft: 8, fontSize: 36}}>{oximeterData.length > 0 ? oximeterData[oximeterData.length - 1] : 0}</Text>
                                                 <View style={{justifyContent: "flex-end", alignItems: "flex-end", marginBottom: 8}}>
                                                     <Text style={{color: "white", fontSize: 10}}>bpm</Text>
                                                 </View>
@@ -224,7 +227,7 @@ export default Add = ({navigation}) => {
                                         <FontAwesomeIcon name="tint" color="white" size={30}/>
                                         <Text style={{color: "white", marginLeft: 8, fontWeight: 'bold'}}>Blood</Text>
                                     </View>
-                                    <View style={{ height: 250, flexDirection: 'row', paddingHorizontal: 16 }}>
+                                    <View style={{ flex: 1, minHeight: 250, flexDirection: 'row', paddingHorizontal: 16 }}>
                                         {
                                             bloodData.length == 0 ?
                                             (
@@ -282,9 +285,6 @@ export default Add = ({navigation}) => {
                         </View>
                     </View>
                 </View>
-                {/* <Button mode="contained" onPress={() => { navigation.navigate("addVital") }} style={{position: "absolute", bottom: 0, borderRadius: 100}} >
-                    Measure Now
-                </Button> */}
             </KeyboardAwareScrollView>
             <ActionButton
                 size={90}
